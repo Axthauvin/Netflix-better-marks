@@ -2,6 +2,19 @@ chrome.runtime.onMessage.addListener(gotMessage);
 function gotMessage(message, sender, sendresponse)
 {
     console.log(message);
+    var erreur = message.error;
+    if (erreur != "none"){
+        const container = document.createElement("div");
+        container.id = "jesuislecontainerdelanoteimdb";
+        container.style = "display : flex; align-items: center; border : 2px; padding-top : 10px; border-radius : 1rem; width : fit-content; padding-right : 10px; margin-bottom : 10px; background:linear-gradient(90deg, #292e49 0%,#536976 100% );";
+
+        const error = document.createElement("span");
+        error.textContent = erreur;
+        error.style = "margin-right : 10px; align-items: center; margin-left : 10px; margin-bottom : 10px; color : #ff8d8d";
+        document.querySelector(".previewModal--detailsMetadata-info").prepend(container);
+        document.querySelector("#jesuislecontainerdelanoteimdb").appendChild(error);
+
+    } else {
     var Note = message.note;
     var meta = message.meta;
     var id = message.id;
@@ -83,6 +96,7 @@ function gotMessage(message, sender, sendresponse)
         am.href = metaurl;
         am.target = '_blank';
         am.style = "margin-right : 10px; align-items: center; margin-left : 10px; margin-bottom : 10px";
+
         
     } else {
         console.log("No link Metacritique");
@@ -209,20 +223,29 @@ function gotMessage(message, sender, sendresponse)
                 console.log(reste);
                 var coolnote = parseFloat(allo);
                 console.log(coolnote);
+
+                
                 for (let pas = 0; pas < coolnote; pas++) {
                     monelement.appendChild(etoile.cloneNode(true));
                 }
+                var togo = 5;
                 if (reste > 0) {
+                    
                     etoileh.style = "vertical-align:middle; clip-path: inset(0px " + (100 - reste * 10).toString() + "% 0px 0);";
                     monelement.appendChild(etoileh.cloneNode(true));
+                    etoileh.style = "vertical-align:middle; clip-path: inset(0px 0px 0px " + (reste * 10).toString() + "%); filter : grayscale(100%); margin-left : -25px";
+                    monelement.appendChild(etoileh.cloneNode(true));
+                    togo = 4;
+
+                } else {
+                    console.log("Note parfaite");
                 }
                 
-                etoileh.style = "vertical-align:middle; clip-path: inset(0px 0px 0px " + (reste * 10).toString() + "%); filter : grayscale(100%); margin-left : -25px";
-                monelement.appendChild(etoileh.cloneNode(true));
+                
                 
                 etoileh.style = "vertical-align:middle; filter : grayscale(100%);";
 
-                for (let pas = 0; pas < 4 - coolnote; pas++) {
+                for (let pas = 0; pas < togo - coolnote; pas++) {
                     monelement.appendChild(etoileh.cloneNode(true));
                 }
             } else {
@@ -264,4 +287,5 @@ function gotMessage(message, sender, sendresponse)
         monelement.appendChild(etoileh.cloneNode(true));
     }
     */
+    }
 }

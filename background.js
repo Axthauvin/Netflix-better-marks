@@ -17,6 +17,13 @@ chrome.tabs.onUpdated.addListener(
 	function (tabId, changeInfo, tab) {
 	  if (changeInfo.url) {
 		chrome.tabs.query({active: true}, function(tabs) {
+			aa = localStorage.getItem("filmsStored")
+			if (aa == null) {
+				var dictaa = {}
+				dictaa.a = "aa"
+				localStorage.setItem("filmsStored", JSON.stringify(dictaa));
+			}
+			
 			if (tabs[0].url.includes("jbv=")) {
 				var tab = tabs[0];
 				localStorage.setItem("lang", "en");
@@ -48,48 +55,88 @@ chrome.tabs.onUpdated.addListener(
 					console.log("meta " + MetaStatus);
 					console.log("allo " + AlloStatus);
 					
-					lang = localStorage.getItem("lang")
-					var r = GetFilm(h1, lang, c, IMDBStatus, MetaStatus);
-					var Note = r.Note;
-					var ID = r.Id;
-					var Metacritick = r.notemeta;
-					var nom = r.nom;
-					var type = r.type;
-					var allo = getAlloresults(nom, c);
-					var allonote = allo.note;
-					var allourl = allo.url;
-					var metaurl = r.metaurl;
+					if (h1.length < 2){
+						console.log("Le nom du film a mal été chargé.")
+						let msg =  {
+							error : "Le nom du film a mal été chargé. Veuillez réessayer"
+						}
+						chrome.tabs.sendMessage(tabId, msg);
+					} else {
+						lang = localStorage.getItem("lang")
+						
+						
+						var r = GetFilm(h1, lang, c, IMDBStatus, MetaStatus);
+						var Note = r.Note;
+						var ID = r.Id;
+						console.log(Note);
+						var Metacritick = r.notemeta;
+						var nom = r.nom;
+						var type = r.type;
+						var allo = getAlloresults(nom, c, y);
+						var allonote = allo.note;
+						var allourl = allo.url;
+						var metaurl = r.metaurl;
+
+						let msg =  {
+							note : Note,
+							id : ID,
+							meta : Metacritick,
+							nom : nom,
+							type : type,
+							allo : allonote,
+							allourl : allourl,
+							things : things,
+							metaurl : metaurl,
+							error : "none"
+						}
+						
+						var dict = {};
+						dict[nom] = msg
+						localStorage.setItem("filmsStored", JSON.stringify( Object.assign( {}, dict, JSON.parse(localStorage.getItem("filmsStored") ) ) ) );
+						
+						chrome.tabs.sendMessage(tabId, msg);
+						
+					}
+					
+					
 					
 					
 					
 					//console.log(localStorage.getItem("choses"));
-					let msg =  {
-						note : Note,
-						id : ID,
-						meta : Metacritick,
-						nom : nom,
-						type : type,
-						allo : allonote,
-						allourl : allourl,
-						things : things,
-						metaurl : metaurl
-					}
-					chrome.tabs.sendMessage(tabId, msg);
+					
 				}
 
-				function getcreator (results) {
-					c = results[0];
-					console.log("Créateur : " + c);
+				function getyear (results) {
+					y = results[0];
+					console.log("Année : " + y);
 					chrome.tabs.executeScript(tab.id, {
 						code: 'document.documentElement.lang'
 					}, getlang);
 					
 				}
 
+				function getcreator (results) {
+					c = results[0];
+					if (c == "6+Recommended for ages 16 and up") {
+						console.log("Le nom du film a mal été chargé.")
+						let msg =  {
+							error : "Le nom du film a mal été chargé. Veuillez réessayer"
+						}
+						chrome.tabs.sendMessage(tabId, msg);
+					} else {
+						console.log("Créateur : " + c);
+						chrome.tabs.executeScript(tab.id, {
+							code: 'document.querySelector(".year").textContent'
+						}, getyear);
+					}
+					
+					
+				}
+
 				function display_h1 (results) {
 					h1 = results[0];
-					console.log(h1);
-					chrome.tabs.executeScript(tab.id, {
+					console.log("Nom : " + h1);
+					chrome.tabs.executeScript(tab.id, { //
 						code: 'document.querySelector(".about-container").children[0].children[1].textContent.substring(1)'
 					}, getcreator);
 					
@@ -147,6 +194,8 @@ function httpGet2(theUrl)
     return xmlHttp.responseText;
 }
 
+
+
 function getRealmoviename(filmname, langa, year) {
 	var apikeyal = "k_swt1m5sc";
 	var lang = langa;
@@ -172,10 +221,48 @@ function getRealmoviename(filmname, langa, year) {
 	
 }
 
+
+
 function GetFilm(filmname, langa, year, im, me) {
+	
 	var askgood = getRealmoviename(filmname, langa, year);
 	var goodmoviename = askgood.moviename;
 	var id = askgood.id;
+	films = JSON.parse(localStorage.getItem("filmsStored"));
+
+	/*
+	delete films['Lucifer']
+	localStorage.setItem("filmsStored", JSON.stringify(films))
+	films = JSON.parse(localStorage.getItem("filmsStored"));
+	*/
+
+	console.log(films);
+	console.log("Recherche dans la base...");
+	console.log(Object.keys(films));
+	for (let i = 0; i < Object.keys(films).length; i++) {
+		if (Object.keys(films)[i] == goodmoviename) {
+
+			if (films[goodmoviename].id == id) {
+				console.log("FOUNDED");
+				console.log(films[goodmoviename]);
+				
+				let msg =  {
+					Note : films[goodmoviename].note,
+					ID : films[goodmoviename].id,
+					notemeta : films[goodmoviename].meta,
+					nom : films[goodmoviename].nom,
+					type : films[goodmoviename].type,
+					allonote : films[goodmoviename].note,
+					allourl : films[goodmoviename].allourl,
+					things : films[goodmoviename].things,
+					metaurl : films[goodmoviename].metaurl,
+					error : "none"
+				}
+				return msg
+			}
+		}
+	}
+	
 	if (me) {
 		var request = "https://www.imdb.com/title/" + id +"/?ref_=fn_al_tt_1";
 		console.log(request);
@@ -183,9 +270,9 @@ function GetFilm(filmname, langa, year, im, me) {
 		var parser = new DOMParser();
 		var doc = parser.parseFromString(response, "text/html");
 
-		var note = doc.getElementsByClassName("ratingValue")[0].textContent.replaceAll(' ', '').replaceAll('\n', '');
+		var note = doc.getElementsByClassName("AggregateRatingButton__RatingScore-sc-1ll29m0-1")[0].textContent.replaceAll(' ', '').replaceAll('\n', '');
 		console.log(note);
-		var seriedetector = doc.getElementsByClassName("bp_item np_episode_guide np_right_arrow").length;
+		var seriedetector = doc.getElementsByClassName("ipc-inline-list__item").length;
 		var type;
 		if (seriedetector === 0){
 			type = "movie";
@@ -196,7 +283,7 @@ function GetFilm(filmname, langa, year, im, me) {
 		var notemeta;
 		var req = "https://www.metacritic.com/" + type + "/" + goodmoviename.replaceAll(' and ', '-').replaceAll(' ', '-').replaceAll('+', '-').replaceAll('\'', '').toLowerCase();
 		console.log(req);
-		console.log("Type :" + type);
+		console.log("Type : " + type);
 		var response = httpGet(req);
 		if (response === "caca"){
 			notemeta = "??"
@@ -314,40 +401,66 @@ function GetFilm(filmname, langa, year, im, me) {
 }
 
 
-function getAlloresults(filmname, creator) {
+function getAlloresults(filmname, creator, year) {
 	var request = "https://www.allocine.fr/_/autocomplete/" + filmname.replaceAll(' ', '_');
 	console.log(request);
 	var response = JSON.parse(httpGet(request));
 	console.log(response);
+	console.log("Résultats trouvés :" + response.results.length.toString());
 	var goodindex = -1;
 	if (response.results.length == 1){
 		goodindex = 0;
 	} else {
 		c = creator.split(' ')[0] + ' ' + creator.split(' ')[1] 
 		for (let pas = 0; pas < response.results.length; pas++) {
-			if (response.results[pas].data.creator_name[0] == c){
-				goodindex = pas;
-				break;
+			if (("creator_name" in response.results[pas].data)) {
+				if (response.results[pas].data.creator_name[0] == c || response.results[pas].data.year == y){
+					goodindex = pas;
+					break;
+				}
 			}
+			
 		}
+		console.log("Avec les paramètres non trouvé. On cherche juste avec le nom !");
+		if (goodindex == -1){
+			for (let ii = 0; ii < response.results.length; ii++) {
+				console.log(response.results[ii].label)
+				if (response.results[ii].label == filmname){
+					goodindex = ii;
+					break
+				}
+				
+			}
+			
+		} 
+		
 	}
 	
 	if (goodindex != -1){
+		console.log("index final", goodindex);
 		var type = response.results[goodindex].entity_type;
 		console.log(response.results[goodindex].data.id);
 		console.log(type);
+		
 		var id = response.results[goodindex].entity_id;
+		
 		var resquestfin;
 		if (type === "movie"){
 			resquestfin = "https://www.allocine.fr/film/fichefilm_gen_cfilm=" + id + ".html";
 		} else {
 			resquestfin = "https://www.allocine.fr/series/ficheserie_gen_cserie=" + id + ".html";
 		}
-		
+		console.log(resquestfin);
 		var response = httpGet2(resquestfin);
 		var parser = new DOMParser();
 		var doc = parser.parseFromString(response, "text/html");
-		var NotePresse = doc.querySelector(".stareval-note").textContent;
+		if (doc.querySelector(".stareval-note") != null ) {
+			var NotePresse = doc.querySelector(".stareval-note").textContent;
+		}
+		else {
+			var NotePresse = "??";
+		}
+		
 	} else {
 		var NotePresse = "??";
 	}

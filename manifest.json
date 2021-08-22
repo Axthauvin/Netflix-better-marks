@@ -16,6 +16,7 @@
         "declarativeContent", 
         "<all_urls>"
         
+        
     ],
 
     "icons": { 
@@ -25,6 +26,8 @@
     "background": {
         "scripts": ["background.js"]
     },
+    
+    
 
     "content_scripts": [{
         "js": ["main.js"],

@@ -188,3 +188,28 @@ function slist (target) {
       });
     }
   }
+
+
+
+function changelang(){
+  var fr = "https://images.emojiterra.com/twitter/512px/1f1eb-1f1f7.png"
+  var en = "https://images.emojiterra.com/twitter/v13.0/512px/1f1ec-1f1e7.png"
+  var txtdetector = document.getElementById("txt").textContent;
+  if (txtdetector.includes("English")) {
+    document.getElementById("txt").textContent = "Changer vers Français";
+    document.getElementById("flag").src = en;
+    document.getElementById("Title").textContent = "Choose the order and activation of the sites whose notes you want to add :";
+    document.getElementsByClassName("signature")[0].textContent = "By Axel Thauvin";
+    document.getElementById("open").textContent = "Open Netflix";
+  } else {
+    document.getElementById("txt").textContent = "Switch to English";
+    document.getElementById("flag").src = fr;
+    document.getElementById("Title").textContent = "Choisir l'ordre et l'activation des sites dont vous voulez ajouter les notes :";
+    document.getElementsByClassName("signature")[0].textContent = "Par Axel Thauvin";
+    document.getElementById("open").textContent = "Ouvrir Netflix";
+  }
+}
+
+
+document.getElementById("Switchlanguage").addEventListener("click", changelang);
+

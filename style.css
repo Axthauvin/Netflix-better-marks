@@ -74,3 +74,55 @@ span {
     font-style: italic;
     text-align: end;
 }
+
+button {
+    background-color: #141414;
+    border: 0;
+    cursor: pointer;
+}
+
+span h3 {
+    margin-top: 0px;
+    font-style: italic;
+}
+
+button img {
+    width : 50px
+}
+
+span {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+#netflix {
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    border-radius: 1rem;
+    border: 1px solid #000000;
+    background-color: #000000;
+    align-items: center;
+    width: fit-content;
+    padding-right: 15px;
+    margin-left: auto;
+    margin-right: auto;
+    
+}
+
+#netflix img {
+    width: 50px;
+    height: 50px;
+    
+}
+#netflix h3 {
+    margin: 0;
+    margin-top: 5px;
+    color: white;
+    
+}
+
+a {
+    text-decoration: none;
+}

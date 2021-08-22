@@ -4,7 +4,7 @@ chrome.runtime.onInstalled.addListener(function() {
 		chrome.declarativeContent.onPageChanged.addRules([{
 			conditions: [
 				new chrome.declarativeContent.PageStateMatcher({
-					pageUrl: { hostContains: 'netflix'}
+					pageUrl: { hostContains: ''}
 				})
 			],
 			actions: [ new chrome.declarativeContent.ShowPageAction() ]
@@ -69,6 +69,7 @@ chrome.tabs.onUpdated.addListener(
 						var Note = r.Note;
 						var ID = r.Id;
 						console.log(Note);
+						console.log(ID)
 						var Metacritick = r.notemeta;
 						var nom = r.nom;
 						var type = r.type;
@@ -248,7 +249,7 @@ function GetFilm(filmname, langa, year, im, me) {
 				
 				let msg =  {
 					Note : films[goodmoviename].note,
-					ID : films[goodmoviename].id,
+					Id : films[goodmoviename].id,
 					notemeta : films[goodmoviename].meta,
 					nom : films[goodmoviename].nom,
 					type : films[goodmoviename].type,
@@ -258,6 +259,7 @@ function GetFilm(filmname, langa, year, im, me) {
 					metaurl : films[goodmoviename].metaurl,
 					error : "none"
 				}
+				console.log(msg);
 				return msg
 			}
 		}
@@ -406,15 +408,22 @@ function getAlloresults(filmname, creator, year) {
 	console.log(request);
 	var response = JSON.parse(httpGet(request));
 	console.log(response);
-	console.log("Résultats trouvés :" + response.results.length.toString());
+	console.log("Résultats trouvés : " + response.results.length.toString());
 	var goodindex = -1;
 	if (response.results.length == 1){
 		goodindex = 0;
 	} else {
-		c = creator.split(' ')[0] + ' ' + creator.split(' ')[1] 
+		c = creator.split(' ')[0] + ' ' + creator.split(' ')[1]
+		
 		for (let pas = 0; pas < response.results.length; pas++) {
 			if (("creator_name" in response.results[pas].data)) {
-				if (response.results[pas].data.creator_name[0] == c || response.results[pas].data.year == y){
+				if (response.results[pas].data.creator_name[0] == c || response.results[pas].data.year == y || response.results[pas].data.director_name == c){
+					goodindex = pas;
+					break;
+				}
+			}
+			if (("director_name" in response.results[pas].data)) {
+				if (response.results[pas].data.director_name == c){
 					goodindex = pas;
 					break;
 				}
@@ -431,13 +440,29 @@ function getAlloresults(filmname, creator, year) {
 				}
 				
 			}
+			if (goodindex == -1) {
+				console.log("Avec le créateur alors ?!");
+				for (let ii = 0; ii < response.results.length; ii++) {
+					console.log(response.results[ii].label)
+					if (("creator_name" in response.results[ii].data)) {
+						if (response.results[ii].data.creator_name[0] == c || response.results[pas].data.year == y){
+							goodindex = pas;
+							break;
+						}
+					}
+					
+				}
+				
+			} 
 			
+		
 		} 
+		
 		
 	}
 	
 	if (goodindex != -1){
-		console.log("index final", goodindex);
+		console.log("Index final", goodindex);
 		var type = response.results[goodindex].entity_type;
 		console.log(response.results[goodindex].data.id);
 		console.log(type);
@@ -459,6 +484,7 @@ function getAlloresults(filmname, creator, year) {
 		}
 		else {
 			var NotePresse = "??";
+		
 		}
 		
 	} else {

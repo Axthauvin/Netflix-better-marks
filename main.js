@@ -49,6 +49,7 @@ function gotMessage(message, sender, sendresponse)
     console.log(elinorder);
     
     console.log("IMDB mets de : " + Note);
+    console.log("https://www.imdb.com/title/" + id + "?ref_=nv_sr_srsg_0")
     console.log("Metacritique mets : " + meta);
     console.log("Allociné mets : " + allo);
 
@@ -60,17 +61,20 @@ function gotMessage(message, sender, sendresponse)
 
     const image = document.createElement("img");
 	image.src  = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/IMDB_Logo_2016.svg/320px-IMDB_Logo_2016.svg.png";
+    //image.src = "/img/IMDB.png";
     image.width = "50";
     image.style = "vertical-align:middle";
 
     const Metaimage = document.createElement("img");
 	Metaimage.src  = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Metacritic.svg/88px-Metacritic.svg.png";
+    //Metaimage.src = "/img/Metacritic.png";
     Metaimage.height = "25.16";
     Metaimage.style = "vertical-align:middle";
 
     const alloimage = document.createElement("img");
 	//alloimage.src  = "https://assets.allocine.fr/skin/img/logo-allocine-287bbe0668.svg";
     alloimage.src = "https://assets.allocine.fr/favicon/allocine.ico";
+    //alloimage.src = "/img/allocine.ico";
     alloimage.height = "25.16";
     alloimage.style = "vertical-align:middle; margin-right : 0px";
     
@@ -114,8 +118,15 @@ function gotMessage(message, sender, sendresponse)
         aa.style = "margin-right : 10px; align-items: center; margin-left : 10px; margin-bottom : 10px";
         
     } else {
-        console.log("No link Allociné");
-        aa.style = "cursor : default; margin-right : 10px; align-items: center; margin-left : 10px; margin-bottom : 10px";
+        if (allourl != "") {
+            aa.href = allourl;
+            aa.target = '_blank';
+            aa.style = "margin-right : 10px; align-items: center; margin-left : 10px; margin-bottom : 10px;";
+        } else {
+            console.log("No link Allociné");
+            aa.style = "cursor : default; margin-right : 10px; align-items: center; margin-left : 10px; margin-bottom : 10px";
+        }
+        
     }
     aa.id = "lelienpourallersurallo";
     //aa.style = "margin-right : 10px;";
@@ -141,7 +152,7 @@ function gotMessage(message, sender, sendresponse)
     metanote.style = "font-weight : bold";
 
     const allonote = document.createElement("span");
-    allonote.style = "display : flex; font-weight : bold";
+    allonote.style = "display : flex; font-weight : bold;";
     allonote.id = "euhgtpasinspirepourmonidalorsjedonneceluila"
     
     //allonote.textContent = " " + allo;
@@ -187,6 +198,7 @@ function gotMessage(message, sender, sendresponse)
     }
     if (AlloStatus){
         allonote.style = knowifitisgood(allo, 5);
+        
     }
     
     

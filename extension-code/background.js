@@ -131,7 +131,7 @@ chrome.tabs.onUpdated.addListener(
 				}
 
 				function getcreator (results) {
-					c = results[0].replaceAll(',', '');
+					c = results[0];
 					if (c.includes("6+Recommended for ages 16 and up")) {
 						console.log("Le nom du film a mal été chargé.")
 						let msg =  {
@@ -151,7 +151,7 @@ chrome.tabs.onUpdated.addListener(
 				function display_h1 (results) {
 					h1 = results[0];
 					console.log("Nom : " + h1);
-					chrome.tabs.executeScript(tab.id, { //
+					chrome.tabs.executeScript(tab.id, { 
 						code: 'document.querySelector(".about-container").children[0].children[1].textContent.substring(1)'
 					}, getcreator);
 					

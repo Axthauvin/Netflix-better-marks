@@ -12,17 +12,27 @@ chrome.runtime.onInstalled.addListener(function() {
 	});
 });
 
+function resetBase() {
+	var dictaa = {}
+	dictaa.a = "aa"
+	localStorage.setItem("filmsStored", JSON.stringify(dictaa));
+	return "base was reseted"
+}
 
 chrome.tabs.onUpdated.addListener(
 	function (tabId, changeInfo, tab) {
 	  if (changeInfo.url) {
 		chrome.tabs.query({active: true}, function(tabs) {
 			aa = localStorage.getItem("filmsStored")
+
+
+			
+			
+			
 			if (aa == null) {
-				var dictaa = {}
-				dictaa.a = "aa"
-				localStorage.setItem("filmsStored", JSON.stringify(dictaa));
+				resetBase();
 			}
+
 			
 			if (tabs[0].url.includes("jbv=")) {
 				var tab = tabs[0];
@@ -77,7 +87,10 @@ chrome.tabs.onUpdated.addListener(
 						var allonote = allo.note;
 						var allourl = allo.url;
 						var metaurl = r.metaurl;
+						var dateexpiration = r.date;
+						console.log("La dernière fois que la note a été téléchargée est : " + dateexpiration.toString())
 
+						 
 						let msg =  {
 							note : Note,
 							id : ID,
@@ -88,7 +101,8 @@ chrome.tabs.onUpdated.addListener(
 							allourl : allourl,
 							things : things,
 							metaurl : metaurl,
-							error : "none"
+							error : "none",
+							date : dateexpiration
 						}
 						
 						var dict = {};
@@ -117,8 +131,8 @@ chrome.tabs.onUpdated.addListener(
 				}
 
 				function getcreator (results) {
-					c = results[0];
-					if (c == "6+Recommended for ages 16 and up") {
+					c = results[0].replaceAll(',', '');
+					if (c.includes("6+Recommended for ages 16 and up")) {
 						console.log("Le nom du film a mal été chargé.")
 						let msg =  {
 							error : "Le nom du film a mal été chargé. Veuillez réessayer"
@@ -245,7 +259,7 @@ function GetFilm(filmname, langa, year, im, me) {
 
 			if (films[goodmoviename].id == id) {
 				console.log("FOUNDED");
-				console.log(films[goodmoviename]);
+				//console.log(films[goodmoviename]);
 				
 				let msg =  {
 					Note : films[goodmoviename].note,
@@ -257,14 +271,36 @@ function GetFilm(filmname, langa, year, im, me) {
 					allourl : films[goodmoviename].allourl,
 					things : films[goodmoviename].things,
 					metaurl : films[goodmoviename].metaurl,
-					error : "none"
+					error : "none",
+					date : films[goodmoviename].date
 				}
 				console.log(msg);
-				return msg
+				var today = new Date();
+				var actualdate = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+				
+				var splited = actualdate.split("-");
+				var dateeeee = (parseInt(splited[2]) - 7);
+				var datetocompare = splited[0]+'-'+splited[1]+'-'+(dateeeee.toString());
+				
+				var splited2 = datetocompare.split('-')
+				var splited1 = msg.date.split('-')
+
+				/*
+
+				console.log(msg.date);
+				console.log(datetocompare);
+				*/
+				if (new Date(splited1[0], splited1[1]-1, splited1[2]) <= new Date(splited2[0], splited2[1]-1, splited2[2])) {
+					console.log("On doit actualiser !");
+				} else {
+					console.log("La date est encore correcte !");
+					return msg
+				}
+				
 			}
 		}
 	}
-	
+	console.log("On lance les requêtes webs !");
 	if (me) {
 		var request = "https://www.imdb.com/title/" + id +"/?ref_=fn_al_tt_1";
 		console.log(request);
@@ -283,9 +319,10 @@ function GetFilm(filmname, langa, year, im, me) {
 		}
 
 		var notemeta;
-		var req = "https://www.metacritic.com/" + type + "/" + goodmoviename.replaceAll(' and ', '-').replaceAll(' ', '-').replaceAll('+', '-').replaceAll('\'', '').toLowerCase();
+		var req = "https://www.metacritic.com/" + type + "/" + goodmoviename.replaceAll(' and ', '-').replaceAll(' ', '-').replaceAll('+', '-').replaceAll('\'', '').replaceAll('-&', '').toLowerCase();
 		console.log(req);
 		console.log("Type : " + type);
+		var useernote = false;
 		var response = httpGet(req);
 		if (response === "caca"){
 			notemeta = "??"
@@ -296,8 +333,16 @@ function GetFilm(filmname, langa, year, im, me) {
 			
 			if (type == "tv"){
 				notemeta = doc.getElementsByClassName("metascore_w larger tvshow")[0].textContent;
+				if (notemeta == "tbd") {
+					notemeta = doc.getElementsByClassName("metascore_w user larger tvshow")[0].textContent;
+					useernote = true;
+				}
 			} else {
 				notemeta = doc.getElementsByClassName("metascore_w larger movie")[0].textContent;
+				if (notemeta == "tbd") {
+					notemeta = doc.getElementsByClassName("metascore_w user larger movie")[0].textContent;
+					useernote = true;
+				}
 			}
 			
 		}
@@ -305,14 +350,22 @@ function GetFilm(filmname, langa, year, im, me) {
 		
 
 		if (notemeta == "tbd") {
+
 			notemeta = "??";
 		}
 		if (notemeta.includes("%") == false && notemeta != "??") {
-			if (notemeta.includes("/100") == false) {
-				notemeta += "%";
+			if (useernote) {
+				notemeta = (parseFloat(notemeta) * 10).toString() + "%"
+				
 			} else {
-				notemeta.replaceAll("/100", "%");
+				if (notemeta.includes("/100") == false) {
+					notemeta += "%";
+				} else {
+					notemeta.replaceAll("/100", "%");
+				}
 			}
+			
+
 		}
 	
 	
@@ -396,7 +449,10 @@ function GetFilm(filmname, langa, year, im, me) {
 	console.log(note);
 	console.log(notemeta);
 	//return {Note : note, Id : id, Notemeta : notemeta};
-	return {Note : note, Id : id, notemeta : notemeta, nom : goodmoviename, type : type, metaurl : req};
+	var today = new Date();
+	var ladate = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+	console.log({Note : note, Id : id, notemeta : notemeta, nom : goodmoviename, type : type, metaurl : req, date:ladate});
+	return {Note : note, Id : id, notemeta : notemeta, nom : goodmoviename, type : type, metaurl : req, date:ladate};
     
 
 
@@ -430,33 +486,48 @@ function getAlloresults(filmname, creator, year) {
 			}
 			
 		}
-		console.log("Avec les paramètres non trouvé. On cherche juste avec le nom !");
+		
 		if (goodindex == -1){
+			console.log("Avec les paramètres non trouvé. On cherche juste avec les recherches associées !");
 			for (let ii = 0; ii < response.results.length; ii++) {
 				console.log(response.results[ii].label)
-				if (response.results[ii].label == filmname){
+				if (response.results[ii].text_search_data.includes(filmname)){
 					goodindex = ii;
 					break
 				}
 				
 			}
 			if (goodindex == -1) {
-				console.log("Avec le créateur alors ?!");
+				console.log("Avec le nom ?");
 				for (let ii = 0; ii < response.results.length; ii++) {
 					console.log(response.results[ii].label)
-					if (("creator_name" in response.results[ii].data)) {
-						if (response.results[ii].data.creator_name[0] == c || response.results[pas].data.year == y){
-							goodindex = pas;
-							break;
-						}
+					if (response.results[ii].label == filmname){
+						goodindex = ii;
+						break
 					}
 					
 				}
 				
+				if (goodindex == -1) {
+					console.log("Avec le créateur alors ?!");
+					for (let ii = 0; ii < response.results.length; ii++) {
+						console.log(response.results[ii].label)
+						if (("creator_name" in response.results[ii].data)) {
+							if (response.results[ii].data.creator_name[0] == c || response.results[pas].data.year == y){
+								goodindex = pas;
+								break;
+							}
+						}
+						
+					}
+				}
 			} 
+			 
 			
 		
-		} 
+		} else {
+			console.log("On a le film sur Allociné !");
+		}
 		
 		
 	}

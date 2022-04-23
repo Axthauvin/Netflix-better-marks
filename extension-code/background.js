@@ -1,4 +1,3 @@
-
 chrome.runtime.onInstalled.addListener(function() {
 	chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
 		chrome.declarativeContent.onPageChanged.addRules([{
@@ -15,172 +14,245 @@ chrome.runtime.onInstalled.addListener(function() {
 function resetBase() {
 	var dictaa = {}
 	dictaa.a = "aa"
-	localStorage.setItem("filmsStored", JSON.stringify(dictaa));
+	chrome.storage.local.set({"filmsStored" : dictaa});
 	return "base was reseted"
+}
+
+
+async function readLocalStorage(key) {
+	let promise =  new Promise((resolve, reject) => {
+	  try {
+		chrome.storage.local.get(key, function (result) {
+		  resolve(result[key])
+		});
+	  } catch  (ex){
+		reject(ex);
+	  }
+	  
+	});
+
+	let result = await promise;
+  	return result;
 }
 
 chrome.tabs.onUpdated.addListener(
 	function (tabId, changeInfo, tab) {
-	  if (changeInfo.url) {
-		chrome.tabs.query({active: true}, function(tabs) {
-			aa = localStorage.getItem("filmsStored")
-
-
-			
-			
-			
-			if (aa == null) {
-				resetBase();
-			}
-
-			
-			if (tabs[0].url.includes("jbv=")) {
-				var tab = tabs[0];
-				localStorage.setItem("lang", "en");
-				
-				function getlang(result){
-					console.log("Langue : " + result);
-					localStorage.setItem("lang", result);
-
-
-					var things = JSON.parse(localStorage.getItem("choses"));
-					var IMDBStatus;
-					var MetaStatus;
-					var AlloStatus;
-					for (let pas = 0; pas < things.length; pas++) {
-						if (things[pas]["nom"] === "IMDB"){
-							
-							IMDBStatus = things[pas].status;
-						} 
-						if (things[pas]["nom"] === "Metacritic"){
-							MetaStatus = things[pas].status;
-						} 
-						if (things[pas]["nom"] === "Allociné"){
-							AlloStatus = things[pas].status;
-						} 
-					}
-					
-					
-					console.log("imdb " + IMDBStatus);
-					console.log("meta " + MetaStatus);
-					console.log("allo " + AlloStatus);
-					
-					if (h1.length < 2){
-						console.log("Le nom du film a mal été chargé.")
-						let msg =  {
-							error : "Le nom du film a mal été chargé. Veuillez réessayer"
-						}
-						chrome.tabs.sendMessage(tabId, msg);
-					} else {
-						lang = localStorage.getItem("lang")
-						
-						
-						var r = GetFilm(h1, lang, c, IMDBStatus, MetaStatus);
-						var Note = r.Note;
-						var ID = r.Id;
-						console.log(Note);
-						console.log(ID)
-						var Metacritick = r.notemeta;
-						var nom = r.nom;
-						var type = r.type;
-						var allo = getAlloresults(nom, c, y);
-						var allonote = allo.note;
-						var allourl = allo.url;
-						var metaurl = r.metaurl;
-						var dateexpiration = r.date;
-						console.log("La dernière fois que la note a été téléchargée est : " + dateexpiration.toString())
-
-						 
-						let msg =  {
-							note : Note,
-							id : ID,
-							meta : Metacritick,
-							nom : nom,
-							type : type,
-							allo : allonote,
-							allourl : allourl,
-							things : things,
-							metaurl : metaurl,
-							error : "none",
-							date : dateexpiration
-						}
-						
-						var dict = {};
-						dict[nom] = msg
-						localStorage.setItem("filmsStored", JSON.stringify( Object.assign( {}, dict, JSON.parse(localStorage.getItem("filmsStored") ) ) ) );
-						
-						chrome.tabs.sendMessage(tabId, msg);
-						
-					}
-					
-					
-					
-					
-					
-					//console.log(localStorage.getItem("choses"));
-					
-				}
-
-				function getyear (results) {
-					y = results[0];
-					console.log("Année : " + y);
-					chrome.tabs.executeScript(tab.id, {
-						code: 'document.documentElement.lang'
-					}, getlang);
-					
-				}
-
-				function getcreator (results) {
-					c = results[0].replaceAll(',', '');
-					if (c.includes("6+Recommended for ages 16 and up")) {
-						console.log("Le nom du film a mal été chargé.")
-						let msg =  {
-							error : "Le nom du film a mal été chargé. Veuillez réessayer"
-						}
-						chrome.tabs.sendMessage(tabId, msg);
-					} else {
-						console.log("Créateur : " + c);
-						chrome.tabs.executeScript(tab.id, {
-							code: 'document.querySelector(".year").textContent'
-						}, getyear);
-					}
-					
-					
-				}
-
-				function display_h1 (results) {
-					h1 = results[0];
-					console.log("Nom : " + h1);
-					chrome.tabs.executeScript(tab.id, { //
-						code: 'document.querySelector(".about-container").children[0].children[1].textContent.substring(1)'
-					}, getcreator);
-					
-				}
-				  
-				chrome.tabs.executeScript(tab.id, {
-					code: 'document.querySelector("strong").textContent'
-				}, display_h1);
-				
-
-				
-				
-				
-
-			}
-			
 		
-		});
-  
-	  }
+		if (changeInfo.url) {
+		  
+			chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+				async function mainprog() {
+					aa = await readLocalStorage("filmsStored");
+				
+					function getTabId() {
+						return parseInt(tabs[0].id);
+					}
+		
+					
+					
+					
+					if (aa == null) {
+						resetBase();
+					}
+		
+					
+					if (tabs[0].url.includes("jbv=")) {
+						var tab = tabs[0];
+						chrome.storage.local.set({"lang" : "en"});
+						
+						async function getlang(result){
+							result = result[0].result;
+							console.log("Langue : " + result);
+							chrome.storage.local.set({"lang": result});
+		
+							//console.log( await readLocalStorage("choses") );
+							var things = await readLocalStorage("choses");
+							console.log(things);
+							var IMDBStatus;
+							var MetaStatus;
+							var AlloStatus;
+							for (let pas = 0; pas < things.length; pas++) {
+								if (things[pas]["nom"] === "IMDB"){
+									
+									IMDBStatus = things[pas].status;
+								} 
+								if (things[pas]["nom"] === "Metacritic"){
+									MetaStatus = things[pas].status;
+								} 
+								if (things[pas]["nom"] === "Allociné"){
+									AlloStatus = things[pas].status;
+								} 
+							}
+							
+							
+							console.log("imdb " + IMDBStatus);
+							console.log("meta " + MetaStatus);
+							console.log("allo " + AlloStatus);
+							
+							if (h1.length < 2){
+								console.log("Le nom du film a mal été chargé.")
+								let msg =  {
+									error : "Le nom du film a mal été chargé. Veuillez réessayer"
+								}
+								chrome.tabs.sendMessage(tabId, msg);
+							} else {
+								lang = await readLocalStorage("lang")
+								
+								
+								var r = await GetFilm(h1, lang, c, IMDBStatus, MetaStatus);
+								var Note = r.Note;
+								var ID = r.Id;
+								console.log(Note);
+								console.log(ID)
+								var Metacritick = r.notemeta;
+								var nom = r.nom;
+								var type = r.type;
+								var allo = await getAlloresults(nom, c, y);
+								var allonote = allo.note;
+								var allourl = allo.url;
+								var metaurl = r.metaurl;
+								var dateexpiration = r.date;
+								console.log("La dernière fois que la note a été téléchargée est : " + dateexpiration.toString())
+		
+								
+								let msg =  {
+									note : Note,
+									id : ID,
+									meta : Metacritick,
+									nom : nom,
+									type : type,
+									allo : allonote,
+									allourl : allourl,
+									things : things,
+									metaurl : metaurl,
+									error : "none",
+									date : dateexpiration
+								}
+								
+								var dict = {};
+								dict[nom] = msg;
+								getdatabase = await readLocalStorage("filmsStored")
+								chrome.storage.local.set({"filmsStored": Object.assign( {}, dict,  getdatabase) });
+								
+								chrome.tabs.sendMessage(tabId, msg);
+								
+							}
+							
+							
+							
+							
+							
+							//console.log(await readLocalStorage("choses"));
+							
+						}
+		
+						function func1(){
+							return document.documentElement.lang;
+							
+						}
+		
+						function getyear (results) {
+							y = results[0].result;
+							console.log("Année : " + y);
+							chrome.scripting.executeScript({ 
+								target : {tabId : tab.id},
+								func : func1,
+							},
+							(injectionResults) => {getlang(injectionResults)}
+							);
+							
+						}
+		
+						function func2() {
+							return document.querySelector(".year").textContent;
+							
+						}
+		
+						function getcreator (results) {
+							c = results[0].result.replaceAll(',', '');
+							if (c.includes("6+Recommended for ages 16 and up")) {
+								console.log("Le nom du film a mal été chargé.")
+								let msg =  {
+									error : "Le nom du film a mal été chargé. Veuillez réessayer"
+								}
+								chrome.tabs.sendMessage(tabId, msg);
+							} else {
+								console.log("Créateur : " + c);
+								chrome.scripting.executeScript({
+									target : {tabId : tab.id},
+									func : func2,
+								},
+								(injectionResults) => {getyear(injectionResults)}
+								);
+							}
+							
+							
+						}
+		
+						function func3 () {
+							return document.querySelector(".about-container").children[0].children[1].textContent.substring(1);
+							
+						}
+		
+						function display_h1 (results) {
+							h1 = results[0].result;
+							console.log("Film : " + h1);
+							chrome.scripting.executeScript({
+								target : {tabId : tab.id},
+								func : func3,
+							},
+							(injectionResults) => {getcreator(injectionResults)}
+							);
+							
+						}
+		
+						function func4() {
+							console.log(document.querySelector("strong").textContent);
+							return document.querySelector("strong").textContent;
+								
+						}
+						
+						
+						
+						chrome.scripting.executeScript(
+							{
+								target : {tabId: tab.id},
+								func : func4,
+							},
+							(injectionResults) => {display_h1(injectionResults)}
+							);
+		
+		
+					}
+				}
+
+				mainprog();
+
+				
+			
+			});
+  		}
 	}
-  );
+);
 
 
 
 
-function httpGet(theUrl)
+
+
+async function httpGet(theUrl)
 {
-	var jepeuxenvoyerlasauce;
+	return fetch(theUrl).then(r => r.text()).then(result => {
+		if (result != undefined) {
+			return result;
+		} else {
+			return "caca";
+		}
+    	
+	});
+	
+	
+	/*
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.open( "GET", theUrl, false);
 	xmlHttp.onloadend = function() {
@@ -198,6 +270,7 @@ function httpGet(theUrl)
 	} else {
 		return "caca";
 	}
+	*/
     
 }
 
@@ -211,11 +284,12 @@ function httpGet2(theUrl)
 
 
 
-function getRealmoviename(filmname, langa, year) {
+async function getRealmoviename(filmname, langa, year) {
 	var apikeyal = "k_swt1m5sc";
 	var lang = langa;
 	var requestgoodmoviename = "https://imdb-api.com/" + lang + "/API/Search/" + apikeyal +"/" + filmname;
-	var result1 = JSON.parse(httpGet(requestgoodmoviename));
+	requesttodo = await httpGet(requestgoodmoviename);
+	var result1 = JSON.parse(requesttodo);
 	var goodmoviename;
 	var id;
 	if (result1.errorMessage != ""){
@@ -224,7 +298,8 @@ function getRealmoviename(filmname, langa, year) {
 		var apikeyal = "k_nm14hapg";
 		var requestgoodmoviename = "https://imdb-api.com/" + lang + "/API/Search/" + apikeyal +"/" + filmname;
 		console.log(requestgoodmoviename);
-		var result2 = JSON.parse(httpGet(requestgoodmoviename));
+		requesttodo = await httpGet(requestgoodmoviename)
+		var result2 = JSON.parse(requesttodo);
 		goodmoviename = result2.results[0].title;
 		id = result2.results[0].id;
 	} else {
@@ -236,19 +311,33 @@ function getRealmoviename(filmname, langa, year) {
 	
 }
 
+function getElementsByClassName(lachaine, classname){
+	index = lachaine.indexOf(classname);
+	index += classname.length;
+	while (lachaine[index] != ">") {
+		index += 1
+	}
+	index += 1
+	chaine = ""
+	while (lachaine[index] != "<") {
+		chaine += lachaine[index]
+		index += 1
+	}
+	return chaine;
+}
 
-
-function GetFilm(filmname, langa, year, im, me) {
+async function GetFilm(filmname, langa, year, im, me) {
 	
-	var askgood = getRealmoviename(filmname, langa, year);
+	var askgood = await getRealmoviename(filmname, langa, year);
 	var goodmoviename = askgood.moviename;
 	var id = askgood.id;
-	films = JSON.parse(localStorage.getItem("filmsStored"));
+	console.log("Le bon nom du film est", goodmoviename);
+	films = await readLocalStorage("filmsStored");
 
 	/*
 	delete films['Lucifer']
-	localStorage.setItem("filmsStored", JSON.stringify(films))
-	films = JSON.parse(localStorage.getItem("filmsStored"));
+	chrome.storage.local.set("filmsStored", JSON.stringify(films))
+	films = JSON.parse(await readLocalStorage("filmsStored"));
 	*/
 
 	console.log(films);
@@ -304,18 +393,21 @@ function GetFilm(filmname, langa, year, im, me) {
 	if (me) {
 		var request = "https://www.imdb.com/title/" + id +"/?ref_=fn_al_tt_1";
 		console.log(request);
-		var response = httpGet(request);
-		var parser = new DOMParser();
-		var doc = parser.parseFromString(response, "text/html");
+		var response = await httpGet(request);
+		//var doc = document.createElement( 'html' );
+		//doc.innerHTML = response;
+		//var parser = new DOMParser();
+		//var doc = parser.parseFromString(response, "text/html");
+		var note = getElementsByClassName(response, "sc-7ab21ed2-1 jGRxWM").replaceAll(' ', '').replaceAll('\n', '');
+		var seriedetector = getElementsByClassName(response, "ipc-inline-list__item").length;
 
-		var note = doc.getElementsByClassName("AggregateRatingButton__RatingScore-sc-1ll29m0-1")[0].textContent.replaceAll(' ', '').replaceAll('\n', '');
-		console.log(note);
-		var seriedetector = doc.getElementsByClassName("ipc-inline-list__item").length;
 		var type;
 		if (seriedetector === 0){
 			type = "movie";
+			console.log("C'est un film")
 		} else {
 			type = "tv";
+			console.log("C'est une série")
 		}
 
 		var notemeta;
@@ -323,24 +415,22 @@ function GetFilm(filmname, langa, year, im, me) {
 		console.log(req);
 		console.log("Type : " + type);
 		var useernote = false;
-		var response = httpGet(req);
+		var response = await httpGet(req);
 		if (response === "caca"){
 			notemeta = "??"
 
 		} else {
-			var parser = new DOMParser();
-			var doc = parser.parseFromString(response, "text/html");
 			
 			if (type == "tv"){
-				notemeta = doc.getElementsByClassName("metascore_w larger tvshow")[0].textContent;
+				notemeta = getElementsByClassName(response, "metascore_w larger tvshow");
 				if (notemeta == "tbd") {
-					notemeta = doc.getElementsByClassName("metascore_w user larger tvshow")[0].textContent;
+					notemeta = getElementsByClassName(response, "metascore_w user larger tvshow");
 					useernote = true;
 				}
 			} else {
-				notemeta = doc.getElementsByClassName("metascore_w larger movie")[0].textContent;
+				notemeta = getElementsByClassName(response, "metascore_w larger movie");
 				if (notemeta == "tbd") {
-					notemeta = doc.getElementsByClassName("metascore_w user larger movie")[0].textContent;
+					notemeta = getElementsByClassName(response, "metascore_w user larger movie");
 					useernote = true;
 				}
 			}
@@ -367,6 +457,7 @@ function GetFilm(filmname, langa, year, im, me) {
 			
 
 		}
+
 	
 	
 		
@@ -375,12 +466,9 @@ function GetFilm(filmname, langa, year, im, me) {
 	} else if (im){
 			var request = "https://www.imdb.com/title/" + id +"/?ref_=fn_al_tt_1";
 			console.log(request);
-			var response = httpGet(request);
-			var parser = new DOMParser();
-			var doc = parser.parseFromString(response, "text/html");
-			//var NoteMeta = doc.querySelectorAll("span");
+			var response = await httpGet(request);
 
-			var note = doc.getElementsByClassName("ratingValue")[0].textContent.replaceAll(' ', '').replaceAll('\n', '');
+			var note = getElementsByClassName(response, "ratingValue").replaceAll(' ', '').replaceAll('\n', '');
 			console.log(note);
 			var notemeta = "nope";
 	} else {
@@ -446,8 +534,8 @@ function GetFilm(filmname, langa, year, im, me) {
 	
 		
 	*/
-	console.log(note);
-	console.log(notemeta);
+	console.log("IMDB", note);
+	console.log("Metacritic", notemeta);
 	//return {Note : note, Id : id, Notemeta : notemeta};
 	var today = new Date();
 	var ladate = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
@@ -459,10 +547,28 @@ function GetFilm(filmname, langa, year, im, me) {
 }
 
 
-function getAlloresults(filmname, creator, year) {
+function querySelector(lachaine, classname){
+	lachaine = lachaine.substring(120000)
+	index = lachaine.indexOf(classname)
+	index += classname.length;
+	while (lachaine[index] != ">") {
+		index += 1
+	}
+	index += 1
+	chaine = ""
+	while (lachaine[index] != "<") {
+		chaine += lachaine[index]
+		index += 1
+	}
+	return chaine;
+}
+
+
+async function getAlloresults(filmname, creator, year) {
 	var request = "https://www.allocine.fr/_/autocomplete/" + filmname.replaceAll(' ', '_');
 	console.log(request);
-	var response = JSON.parse(httpGet(request));
+	requesttodo = await httpGet(request)
+	var response = JSON.parse(requesttodo);
 	console.log(response);
 	console.log("Résultats trouvés : " + response.results.length.toString());
 	var goodindex = -1;
@@ -547,11 +653,13 @@ function getAlloresults(filmname, creator, year) {
 			resquestfin = "https://www.allocine.fr/series/ficheserie_gen_cserie=" + id + ".html";
 		}
 		console.log(resquestfin);
-		var response = httpGet2(resquestfin);
-		var parser = new DOMParser();
-		var doc = parser.parseFromString(response, "text/html");
-		if (doc.querySelector(".stareval-note") != null ) {
-			var NotePresse = doc.querySelector(".stareval-note").textContent;
+		var response = await httpGet(resquestfin);
+		
+		
+		trouve = querySelector(response, "stareval-note");
+
+		if (trouve != null ) {
+			var NotePresse = trouve;
 		}
 		else {
 			var NotePresse = "??";

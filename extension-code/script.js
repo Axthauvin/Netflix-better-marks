@@ -1,49 +1,61 @@
-window.addEventListener("DOMContentLoaded", function(){
-    slist("sortlist");
-  });
-if (localStorage.getItem("choses") === null) {
-  var choses = [{nom : "IMDB", status : true}, {nom : "Metacritic", status : true}, {nom : "Allociné", status : true}];
-  localStorage.setItem("choses", JSON.stringify(choses))
-}
-
-function getall(){
+async function readLocalStorage(key) {
+  let promise =  new Promise((resolve, reject) => {
+    try {
+      chrome.storage.local.get(key, function (result) {
+        resolve(result[key])
+      });
+    } catch  (ex){
+      reject(ex);
+    }
     
-    return JSON.parse(localStorage.getItem("choses"));
+  });
+
+  let result = await promise;
+  return result;
+
+
+};
+
+//readLocalStorage("choses");
+
+
+
+async function ChosesEstVide() {
+  a = await readLocalStorage("choses");
+  if (a == null) {
+    chrome.storage.local.set({choses: [{nom : "IMDB", status : true}, {nom : "Metacritic", status : true}, {nom : "Allociné", status : true}]});
+    console.log("On mets le contenu par défaut");
+  }
+  
+}
+ChosesEstVide();
+
+
+
+
+
+
+
+
+
+
+async function changevalue(nom){
+  console.log(nom);
+  var things = await readLocalStorage("choses");
+  console.log(things);
+  for (let pas = 0; pas < things.length; pas++) {
+      var actual = document.querySelectorAll(".list-item")[pas];
+      var name = actual.textContent;
+      var val = document.getElementById(name).checked;
+      things[pas] = {nom : name, status : val};
+      
+  }
+  console.log(things);
+  chrome.storage.local.set({"choses": things});
 }
 
-function changevalue(nom){
-    var things = getall();
-    console.log(things);
-    for (let pas = 0; pas < things.length; pas++) {
-        var actual = document.querySelectorAll(".list-item")[pas];
-        var name = actual.textContent;
-        var val = document.querySelector("#"+name).checked;
-        things[pas] = {nom : name, status : val};
-        
-    }
-    console.log(things);
-    localStorage.setItem("choses", JSON.stringify(things));
-    /*
-    for (let pas = 0; pas < fin.length; pas++) {
-        if (things[pas].nom === nom){
-            
-
-            if (things[pas].status === true){
-              things[pas].status = false;
-            } else if (fin[pas].status === false){
-              things[pas].status = true;
-                
-            }
-            console.log(things);
-            localStorage.setItem("choses", JSON.stringify(fin));
-            fin = [];
-            break
-        }
-    }
-    */
-}
-
-function set(c){
+async function set(c){
+    console.log(c);
     var container = document.querySelector("ul");
     for (let pas = 0; pas < c.length; pas++) {
         
@@ -71,10 +83,11 @@ function set(c){
         const li = document.createElement("li");
         li.className = "list-item";
         li.title = nom;
-        
+
         container.appendChild(li.cloneNode(true));
         const div = document.createElement("div");
         div.className = "bordure";
+        
 
         const input = document.createElement("input");
         input.type = "checkbox";
@@ -84,9 +97,6 @@ function set(c){
         input.checked = c[pas].status;
         input.id = nom;
         
-        //input.addEventListener("change",);
-        //input.onclick = changevalue(nom);
-        //input.onclick = console.log("hey !");
 
 
         var lastli = document.querySelectorAll("li")[document.querySelectorAll("li").length - 1];
@@ -115,9 +125,11 @@ function set(c){
         var dernier = document.querySelectorAll(".list-item")[document.querySelectorAll(".list-item").length - 1];
         dernier.style = "border-bottom : 0";
 }
+async function startset() {
+  set(await readLocalStorage("choses"));
+}
 
-choses = getall();
-set(choses);
+startset();
 
 function slist (target) {
     // (A) GET LIST + ATTACH CSS CLASS
@@ -177,12 +189,11 @@ function slist (target) {
           }
           var dernier = document.querySelectorAll(".list-item")[document.querySelectorAll(".list-item").length - 1];
           dernier.style = "border-bottom : 0";
-          console.log(dernier);
+          console.log("Le dernier : ", dernier);
           for (let it=0; it < document.querySelectorAll(".list-item").length - 1; it++) {
             document.querySelectorAll(".list-item")[it].style = "border-bottom : solid 2px #595959;"
           }
-          
-          changevalue(i.id);
+          changevalue(i.title);
         }
 
       });
@@ -212,4 +223,9 @@ function changelang(){
 
 
 document.getElementById("Switchlanguage").addEventListener("click", changelang);
+//changelang();
 
+window.addEventListener("DOMContentLoaded", function(){
+  slist("sortlist");
+ 
+});
